@@ -223,7 +223,7 @@ void VlgSglTgtGen::ConstructWrapper_add_condition_signals() {
   }
 
   if (has_flush) {
-    ILA_ASSERT(IN("pre-flush end", instr) and
+    ILA_ASSERT(IN("pre-flush end", instr) &&
                IN("post-flush end", instr)); // there has to be something
 
     std::string issue_cond;

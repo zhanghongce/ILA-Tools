@@ -147,7 +147,7 @@ VlgSglTgtGen::VlgSglTgtGen(
       _bad_state = true;
     }
     // check for fields in
-    if (! IN("instruction", instr) or ! instr["instruction"].is_string()) {
+    if (! IN("instruction", instr) || !instr["instruction"].is_string()) {
       ILA_ERROR << "RF: `instruction` field must be a string for "
                 << instr_ptr->name().str();
       _bad_state = true;
@@ -161,7 +161,7 @@ VlgSglTgtGen::VlgSglTgtGen(
       _bad_state = true;
     }
 
-    if (IN("pre-flush end", instr) and !instr["pre-flush end"].is_array()) {
+    if (IN("pre-flush end", instr) && !instr["pre-flush end"].is_array()) {
       ILA_ERROR << "RF: 'pre-flush end' field must be an array of string for "
                 << instr_ptr->name().str();
       _bad_state = true;
@@ -203,8 +203,6 @@ VlgSglTgtGen::VlgSglTgtGen(
     ILA_WARN_IF(instr_ptr != nullptr) << "Provide an instruction "
       << "when verifying invariants. The instruction will not be used";
   }
-
-
   // if you supply additional invariant in the invariant synthesis
   // there will still be a target for invariant generated. 
   // you can use it to verify the invariants if you like
@@ -222,7 +220,6 @@ void VlgSglTgtGen::ConstructWrapper_generate_header() {
   vlg_wrapper.add_preheader("\n`define true  1'b1\n");
   vlg_wrapper.add_preheader("\n`define false 1'b0\n");
 } // ConstructWrapper_generate_header
-
 
 // for special memory, we don't need to do anything?
 void VlgSglTgtGen::ConstructWrapper_add_varmap_assumptions() {

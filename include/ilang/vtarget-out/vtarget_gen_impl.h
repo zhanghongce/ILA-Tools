@@ -292,7 +292,7 @@ protected:
   /// Store the configuration
   vtg_config_t _vtg_config;
   /// Store the vlg configurations
-  const VerilogGenerator::VlgGenConfig& _vlg_cfg; 
+  const VerilogGenerator::VlgGenConfig& _vlg_cfg;
   /// Store the selection of backend
   backend_selector _backend;
 

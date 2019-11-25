@@ -115,7 +115,7 @@ public:
   void SetMemNameAndWidth(const std::string& directive,
                   const std::string& ila_state_name,
                   bool abs_read, int, int);
-  
+
   /// Return the memory instantiation string
   std::string GetAbsMemInstString(VerilogGeneratorBase& gen,
                                   const std::string& endCond);

@@ -236,7 +236,9 @@ std::string VlgSglTgtGen::ConstructWrapper_get_ila_module_inst() {
   std::string sep;
   for (auto&& r : vlg_ila.regs) {
     if (! IN("__ILA_SO_" + r.first, vlg_wrapper.wires)) {
-      ILA_WARN << "__ILA_SO_" + r.first << " will be ignored";
+      ILA_WARN_IF(
+        r.first.find("__COUNTER_start__n") != 0
+      ) << "__ILA_SO_" + r.first << " will be ignored";
 
       retStr += sep + "   ." + r.first + "()"; // __ILA_SO_" + r.first + "
       port_connected.insert(r.first);
@@ -326,8 +328,6 @@ void VlgSglTgtGen::ConstructWrapper_register_extra_io_wire() {
     // so, later they will be connected
   }
 } // ConstructWrapper_register_extra_io_wire
-
-
 
 } // namespace ilang
 

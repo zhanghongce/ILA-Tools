@@ -36,7 +36,7 @@ bool isStateBegin(unsigned char c) { return std::isalpha(c) || c=='#' || c == '_
 bool isStateCont(unsigned char c, size_t idx, const std::string& s) {
   if (std::isalpha(c) || std::isdigit(c) || c == '.' || c == '_' || c == ']' )
     return true;
-  if (not s.empty() and s.front() == '#' and c == '#')
+  if (! s.empty() && s.front() == '#' && c == '#')
     return true;
   else if (c == '[') {
     auto rp = s.find(']', idx);

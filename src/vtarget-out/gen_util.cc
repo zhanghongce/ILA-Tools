@@ -416,7 +416,7 @@ std::string VlgSglTgtGen::PerStateMap(const std::string& ila_state_name,
   }
   
   // add signal -- account for jg's bug
-  if (_backend == backend_selector::JASPERGOLD and
+  if (_backend == backend_selector::JASPERGOLD &&
       vlg_state_name.find('[') != vlg_state_name.npos)
     return ReplExpr(vlg_state_name, true) + " == __ILA_SO_" +
            ila_state->name().str();
@@ -442,7 +442,7 @@ std::string VlgSglTgtGen::GetStateVarMapExpr(const std::string& ila_state_name,
     std::string rfm = m.get<std::string>();
     if (_sdr.isSpecialStateDir(rfm)) {
       // currently we only support **MEM** as state directive
-      if(not _sdr.isSpecialStateDirMem(rfm)) {
+      if(! _sdr.isSpecialStateDirMem(rfm)) {
         ILA_ERROR<<"Unsupported state directive:"<<rfm;
         return VLG_TRUE;
       }

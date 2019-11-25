@@ -33,7 +33,7 @@ void VlgTgtSupplementaryInfo::FromJson(nlohmann::json & vmap) {
     }
   }
   
-  if ( IN("memory-ports", supplementary_info) and supplementary_info["memory-ports"].is_object() ) {
+  if ( IN("memory-ports", supplementary_info) && supplementary_info["memory-ports"].is_object() ) {
     std::set<std::string> ports = {"ren","wen", "raddr","waddr", "rdata","wdata"};
     for (auto && p : supplementary_info["memory-ports"].items()) {
       std::string port = p.key();
@@ -58,7 +58,7 @@ void VlgTgtSupplementaryInfo::FromJson(nlohmann::json & vmap) {
     }
   }
 
-  if ( IN("memory", supplementary_info) and supplementary_info["memory"].is_object() ) {
+  if ( IN("memory", supplementary_info) && supplementary_info["memory"].is_object() ) {
     for (auto && nw : supplementary_info["memory"].items()) {
       std::string memory_export_directive = nw.value().get<std::string>();
       memory_export_type directive = memory_export_type_external;

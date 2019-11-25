@@ -43,7 +43,7 @@ void VlgSglTgtGen_Jasper::add_reg_cassign_assumption(
     const std::string& varname, const std::string& expression,
     int width,
     const std::string& cond, const std::string& dspt) {
-      
+
   std::string rand_in_name = "__" + varname + "_init__";
   vlg_wrapper.add_input(rand_in_name, width);
   vlg_wrapper.add_wire (rand_in_name, width);

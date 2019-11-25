@@ -443,7 +443,7 @@ bool VerilogModifier::add_mod_decl_wire_to_this_line(const std::string& line_in,
     ILA_ERROR
         << "unable to find the right ) to insert port decl, will continue.";
     ILA_ERROR
-        << "Line in : " << line_in << " vname:" << vname;
+        << "Line-in : " << line_in << " vname:" << vname;
     line_out = line_in;
     return true;
   }
