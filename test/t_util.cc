@@ -162,6 +162,26 @@ TEST(TestUtil, RegularExpr) {
   }
 }
 
+#define TestTrim(fa, in, out) { \
+std::string a = in; \
+fa (a); \
+EXPECT_EQ(a, out); \
+}
+
+TEST(TestUtil, StrTrim) {
+  TestTrim(StrLeftTrim, " dfs a b ", "dfs a b ");
+  TestTrim(StrLeftTrim, "  dfs a b ", "dfs a b ");
+  TestTrim(StrLeftTrim, "   dfs a b ", "dfs a b ");
+  TestTrim(StrRightTrim, "   dfs a b", "   dfs a b");
+  TestTrim(StrRightTrim, "   dfs a b ", "   dfs a b");
+  TestTrim(StrRightTrim, "   dfs a b  ", "   dfs a b");
+  TestTrim(StrTrim, "dfs a b", "dfs a b");
+  TestTrim(StrTrim, " dfs a b ", "dfs a b");
+  TestTrim(StrTrim, "  dfs a b ", "dfs a b");
+  TestTrim(StrTrim, "   dfs a b", "dfs a b");
+  TestTrim(StrTrim, "   dfs a b ", "dfs a b");
+  TestTrim(StrTrim, "   dfs a b  ", "dfs a b");
+}
 
 
 } // namespace ilang
