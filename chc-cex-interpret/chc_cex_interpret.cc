@@ -18,25 +18,6 @@ struct name_value_width_t {
   size_t width;
 };
 
-// trim from start (in place)
-static inline void ltrim(std::string &s) {
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int ch) {
-        return !std::isspace(ch);
-    }));
-}
-
-// trim from end (in place)
-static inline void rtrim(std::string &s) {
-    s.erase(std::find_if(s.rbegin(), s.rend(), [](int ch) {
-        return !std::isspace(ch);
-    }).base(), s.end());
-}
-
-// trim from both ends (in place)
-static inline void trim(std::string &s) {
-    ltrim(s);
-    rtrim(s);
-}
 
 void parseCex(std::istringstream & fin, std::vector<name_value_width_t> & var_val_list,
   const ilang::smt::datatypes_t & datatypes,
@@ -62,7 +43,7 @@ void parseCex(std::istringstream & fin, std::vector<name_value_width_t> & var_va
 
 
   while(fin>>line) {
-    trim(line);
+    ilang::StrTrim(line);
     bool has_l_parath = false;
     if (line.find('(') == 0) {
       ILA_ASSERT(p->_type.is_datatype()) << "Expecting datatype on (";

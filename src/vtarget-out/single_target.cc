@@ -233,7 +233,7 @@ void VlgSglTgtGen::ConstructWrapper_add_varmap_assumptions() {
 
   for (auto& i : (rf_vmap["state mapping"]).items()) {
     auto sname = i.key();
-    if (not IN(sname, ila_state_names)) {
+    if (! IN(sname, ila_state_names)) {
       ILA_ERROR << sname
                 << " is not a state of the ILA:" << _host->name().str();
       continue;
@@ -250,7 +250,7 @@ void VlgSglTgtGen::ConstructWrapper_add_varmap_assumptions() {
     ILA_DLOG("VtargetGen.ConstructWrapper_add_varmap_assumptions") << sname;
 
     std::string problem_name = "variable_map_assume";
-    if (_vtg_config.PerVariableProblemCosa and not
+    if (_vtg_config.PerVariableProblemCosa && !
         _backend == backend_selector::YOSYS)
       problem_name += "_" + sname;
     // if we are targeting yosys, we should make sure they have the same problem_name

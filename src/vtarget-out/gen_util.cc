@@ -468,7 +468,7 @@ std::string VlgSglTgtGen::GetStateVarMapExpr(const std::string& ila_state_name,
         ILA_ERROR << ila_state_name << " does not exist in ILA.";
         return VLG_TRUE;
       }
-      if (not ila_state->sort()->is_mem()) {
+      if (! ila_state->sort()->is_mem()) {
         ILA_ERROR << ila_state_name << " is not memory, not compatible w. "
                   << rfm;
         return VLG_TRUE;
