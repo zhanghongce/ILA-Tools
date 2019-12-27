@@ -11,6 +11,17 @@ Z3ExprAdapter::Z3ExprAdapter(z3::context& ctx) : ctx_(ctx) {}
 
 Z3ExprAdapter::~Z3ExprAdapter() {}
 
+
+bool Z3ExprAdapter::SemanticallyEqual(const ExprPtr &l, const ExprPtr &r) {
+  if(!l->sort()->Equal(r->sort()))
+    return false;
+  z3::solver s(ctx_);
+  s.add(GetExpr(l) != GetExpr(r));
+  if( s.check() == z3::unsat )
+    return true;
+  return false;
+}
+
 z3::expr Z3ExprAdapter::GetExpr(const ExprPtr expr, const std::string& suffix) {
   expr_map_.clear();
   suffix_ = suffix;

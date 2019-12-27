@@ -14,6 +14,7 @@ namespace ilang {
 
 /// The function object for hashing Expr in generating z3 expression.
 typedef ExprHash Z3AdapterHash;
+// ExprHash should be pure id, otherwise there will be circular dependency
 
 /// \brief The class for generating z3 expression from an ILA.
 class Z3ExprAdapter {
@@ -33,6 +34,9 @@ public:
 
   /// Function object for getting z3 expression.
   void operator()(const ExprPtr expr);
+
+  /// Check if two AST are semantically equal
+  bool SemanticallyEqual(const ExprPtr &l, const ExprPtr &r);
 
 private:
   // ------------------------- MEMBERS -------------------------------------- //

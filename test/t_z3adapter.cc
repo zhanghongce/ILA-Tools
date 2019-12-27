@@ -76,6 +76,41 @@ TEST(TestZ3Adapter, Suffix) {
   DebugLog::Disable("z3_adapter");
 }
 
+TEST(TestZ3Adapter, SemanticEqual) {
+  z3::context c;
+  Z3ExprAdapter adapter(c);
+  auto reg_x = ExprFuse::NewBvVar("reg_x", 8);
+  auto reg_y = ExprFuse::NewBvVar("reg_y", 8);
+  auto reg_z = ExprFuse::NewBvVar("reg_z", 8);
+  auto x_plus_y = ExprFuse::Add(reg_x, reg_y);
+  auto y_plus_x = ExprFuse::Add(reg_y, reg_x);
+  EXPECT_TRUE(adapter.SemanticallyEqual(x_plus_y, y_plus_x));
+
+  auto xyz = ExprFuse::Add(ExprFuse::Add(reg_x, reg_y), reg_z);
+  auto zxy = ExprFuse::Add(ExprFuse::Add(reg_z, reg_x), reg_y);
+  EXPECT_TRUE(adapter.SemanticallyEqual(xyz, zxy));
+
+  auto yxy = ExprFuse::Add(ExprFuse::Add(reg_y, reg_x), reg_y);
+  auto xyy = ExprFuse::Add(ExprFuse::Add(reg_x, reg_y), reg_y);
+  auto xxy = ExprFuse::Add(ExprFuse::Add(reg_x, reg_x), reg_y);
+  auto xyx = ExprFuse::Add(ExprFuse::Add(reg_x, reg_y), reg_x);
+  EXPECT_TRUE(adapter.SemanticallyEqual(yxy, xyy));
+  EXPECT_TRUE(adapter.SemanticallyEqual(xxy, xyx));
+  EXPECT_FALSE(adapter.SemanticallyEqual(yxy, xyx));
+
+  // x-(y+z)
+  // (x-y)-z
+  auto e1 = ExprFuse::Sub(reg_x, ExprFuse::Add(reg_y, reg_z));
+  auto e2 = ExprFuse::Sub(ExprFuse::Sub(reg_x, reg_y), reg_z);
+  EXPECT_TRUE(adapter.SemanticallyEqual(e1, e2));
+
+  // x+y
+  // x-y
+  auto x_minus_y = ExprFuse::Sub(reg_x, reg_y);
+  EXPECT_FALSE(adapter.SemanticallyEqual(x_plus_y, x_minus_y));
+
+}
+
 // TODO simplify
 // TODO change context
 // TODO Clear

@@ -139,7 +139,7 @@ TEST_F(TestHashApi, level2) {
 
 TEST_F(TestHashApi, ExplicitName) {
   auto bad_name = ila->NewBvState("ADDbv_xbv_y", 8);
-  auto same_name = Add(x, y);
+  auto same_name = Add(bv_x, bv_y);
 
   auto rb = mngr->GetRep(bad_name);
   auto rs = mngr->GetRep(same_name);
@@ -147,7 +147,7 @@ TEST_F(TestHashApi, ExplicitName) {
   EXPECT_NE(rb, rs);
 }
 
-#if 0
+#if 1
 // Below are the tables used in AES
 // if you use two different variables
 // to index into the two tables, there

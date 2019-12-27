@@ -466,7 +466,7 @@ DEFINE_OPERATOR(eq) {
 DEFINE_OPERATOR(ite) {
   ILA_ASSERT(idx.empty());
   ILA_ASSERT(args.size() == 3);
-  ILA_ASSERT(args[0]->_type._type == var_type::tp::Bool);
+  ILA_ASSERT(args[0]->_type.is_bool());
   ILA_ASSERT(var_type::eqtype(args[1]->_type, args[2]->_type));
 
   auto vlg_expr = "(" + args[0]->_translate + ") ? (" + args[1]->_translate +
@@ -510,7 +510,7 @@ DEFINE_OPERATOR(concat) {
   unsigned total_width = 0;
   bool first = true;
   for (auto&& arg : (args)) {
-    ILA_ASSERT(arg->_type._type == (var_type::tp::BV));
+    ILA_ASSERT(arg->_type.is_bv());
     if (first)
       (vlg_expr) += arg->_translate;
     else
