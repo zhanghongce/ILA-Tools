@@ -368,36 +368,40 @@ std::string VlgSglTgtGen::PerStateMap(const std::string& ila_state_name,
     if (!external) { // if internal
       // if you choose to expand the array then we are able to handle with out
       // MEM directive
-      int addr_range = std::pow(2, ila_state->sort()->addr_width()); // 2^N
-      int specify_range = ExprFuse::GetMemSize(ila_state);
-      ILA_ERROR_IF(specify_range > addr_range)
-          << "For memory state: " << ila_state_name << ", its address width is"
-          << ila_state->sort()->addr_width() << " which can hold " << addr_range
-          << " addrs"
-          << ", but range: " << specify_range
-          << " is specified with SetEntryNum";
-      if (specify_range != 0)
-        addr_range = specify_range;
-      // construct expansion expression
-      std::string map_expr;
-      for (int idx = 0; idx < addr_range; ++idx) {
-        if (!map_expr.empty())
-          map_expr += "&&";
-        map_expr +=
-            "( __ILA_SO_" + ila_state_name + "_" + std::to_string(idx) +
-            " == " +
-            ReplExpr(vlg_st_name + "[" + std::to_string(idx) + "]", true) + ")";
-      }
+      if (_backend == backend_selector::COSA && _vtg_config.CosaMemEqHrString) {
+        ILA_ASSERT(false) << "Implementation bug: should not land here.";
+      } else {
+        int addr_range = std::pow(2, ila_state->sort()->addr_width()); // 2^N
+        int specify_range = ExprFuse::GetMemSize(ila_state);
+        ILA_ERROR_IF(specify_range > addr_range)
+            << "For memory state: " << ila_state_name << ", its address width is"
+            << ila_state->sort()->addr_width() << " which can hold " << addr_range
+            << " addrs"
+            << ", but range: " << specify_range
+            << " is specified with SetEntryNum";
+        if (specify_range != 0)
+          addr_range = specify_range;
+        // construct expansion expression
+        std::string map_expr;
+        for (int idx = 0; idx < addr_range; ++idx) {
+          if (!map_expr.empty())
+            map_expr += "&&";
+          map_expr +=
+              "( __ILA_SO_" + ila_state_name + "_" + std::to_string(idx) +
+              " == " +
+              ReplExpr(vlg_st_name + "[" + std::to_string(idx) + "]", true) + ")";
+        }
 
-      std::string map_sig = new_mapping_id();
-      vlg_wrapper.add_wire(map_sig, 1, true);
-      vlg_wrapper.add_output(map_sig, 1);
-      add_wire_assign_assumption(map_sig, map_expr, "vmap");
-      return map_sig;
+        std::string map_sig = new_mapping_id();
+        vlg_wrapper.add_wire(map_sig, 1, true);
+        vlg_wrapper.add_output(map_sig, 1);
+        add_wire_assign_assumption(map_sig, map_expr, "vmap");
+        return map_sig;
+      }
     } else {
       ILA_ERROR
           << "Please use **MEM**.? directive for memory state matching of "
-          << ila_state_name;
+          << ila_state_name << ", as it is treated as `external` ";
       return VLG_TRUE;
     }
   }
@@ -446,7 +450,7 @@ std::string VlgSglTgtGen::PerStateMap(const std::string& ila_state_name,
 } // PerStateMap
 
 // ila-state -> ref (json)
-// return a verilog verilog, that should be asserted to be true for this purpose
+// return a verilog, that should be asserted to be true for this purpose
 std::string VlgSglTgtGen::GetStateVarMapExpr(const std::string& ila_state_name,
                                              nlohmann::json& m,
                                              bool is_assert) {

@@ -32,6 +32,10 @@
 
 namespace ilang {
 
+/// \brief A class to specify the type of expression
+/// this may be inserted as an assumption or 
+
+
 /// \brief Generating a target (just the invairant or for an instruction)
 class VlgSglTgtGen {
 public:

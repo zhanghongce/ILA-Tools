@@ -114,6 +114,8 @@ public:
     unsigned MaxBound;
     /// Only enforce var eq on updated vars, should not be used
     bool OnlyAssumeUpdatedVarsEq; // should be false
+    /// CoSA: have special handling of array equality
+    bool CosaMemEqHrString; // default false
 
 
     // ----------- Options for CoSA script -------------- //
@@ -232,7 +234,7 @@ public:
           ForceInstCheckReset(false), PortDeclStyle(AUTO),
           CosaGenJgTesterScript(false), CosaFullTrace(false), CosaAddKeep(true),
           CosaDotReferenceNotify(CosaDotReferenceNotify_t::NOTIFY_PANIC),
-          MaxBound(127), OnlyAssumeUpdatedVarsEq(false),
+          MaxBound(127), OnlyAssumeUpdatedVarsEq(false), CosaMemEqHrString(false),
 
           // ----------- Options for CoSA script -------------- //
           CosaPath(""), CosaPyEnvironment(""), CosaSolver(""),
