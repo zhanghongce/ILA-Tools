@@ -79,8 +79,8 @@ void VerilogDecodeForAQedGenerator::ExportDecode(
       if (v->is_mem()) {
         ILA_ERROR << "mem as input : not implemented";
       } else {
-        add_output(sanitizeName(v), get_width(v));
-        add_wire(sanitizeName(v), get_width(v), true);
+        add_output(ILA_VAR_PREFIX + sanitizeName(v), get_width(v));
+        add_wire(ILA_VAR_PREFIX + sanitizeName(v), get_width(v), true);
       }
     }
   } // add used vars in the set
