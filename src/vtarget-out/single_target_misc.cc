@@ -30,12 +30,14 @@ bool VlgSglTgtGen::bad_state_return(void) {
 } // bad_state_return
 
 void VlgSglTgtGen::ConstructWrapper_add_additional_mapping_control() {
-  if (IN("mapping control", rf_vmap)) {
-    if (!rf_vmap["mapping control"].is_array())
-      ILA_ERROR << "mapping control field must be an array of string";
-    for (auto&& c : rf_vmap["mapping control"]) {
+  if (IN("mapping control", rf_vmap) || IN("mapping-control", rf_vmap)) {
+    auto & mp = IN("mapping control", rf_vmap) ?
+      rf_vmap["mapping control"] : rf_vmap["mapping-control"] ;
+    if (!mp.is_array())
+      ILA_ERROR << "mapping-control field must be an array of string";
+    for (auto&& c : mp) {
       if (!c.is_string()) {
-        ILA_ERROR << "mapping control field must be an array of string";
+        ILA_ERROR << "mapping-control field must be an array of string";
         continue;
       }
       add_an_assumption(ReplExpr(c.get<std::string>()),

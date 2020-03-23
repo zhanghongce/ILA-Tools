@@ -11,22 +11,24 @@
 
 namespace ilang{
 
-AQedInfoGeneratorBase::AQedInfoGeneratorBase() {} // do nothing
-AQedInfoGeneratorBase::~AQedInfoGeneratorBase() {} // do nothing
+AQedInfoGenerator::AQedInfoGenerator() {} // do nothing
+AQedInfoGenerator::~AQedInfoGenerator() {} // do nothing
 
-AQedInfoGenerator::AQedInfoGenerator(const InstrLvlAbsPtr& ila_ptr_) :
-    ila_ptr(ila_ptr_) {}
-
-
-void AQedInfoGenerator::ExportInstructionAndDecode(const std::string& filename) {
-    VerilogDecodeForAQedGenerator vdout;
-    vdout.ExportIla(ila_ptr);
-    vdout.GenSequenceAssumtionsAny();
-    vdout.GenSequenceOneAtATime();
-
-    std::ofstream fout(filename);
-    ILA_ERROR_IF(!fout.is_open()) << "Unable to write to " << filename;
-    vdout.DumpToFile(fout);
+AQedInfoGenerator::AQedInfoGeneratorPtr
+AQedInfoGenerator::Create(
+    const std::vector<std::string>& implementation_include_path,
+    const std::vector<std::string>& implementation_srcs,
+    const std::string& implementation_top_module,
+    const std::string& refinement_variable_mapping,
+    const std::string& refinement_conditions,
+    const InstrLvlAbsCnstPtr& ila_ptr_) {
+  return std::make_shared<AQedInfoGeneratorImpl>(
+    implementation_include_path,
+    implementation_srcs,
+    implementation_top_module,
+    refinement_variable_mapping,
+    refinement_conditions,
+    ila_ptr_ );
 }
 
 }; // namespace ilang

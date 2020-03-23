@@ -9,86 +9,74 @@
 namespace ilang {
 
 /// \brief Class of Verilog Decode AQed Generator
-class VerilogDecodeForAQedGenerator : public VerilogGeneratorBase {
+class VerilogDecodeForAQedGenerator : public VerilogGenerator {
 public:
   // --------------------- TYPE DEFINITIONS ---------------------------- //
   /// let the test class use this module
   friend class TestVerilogExport;
   /// Type of Verilog id names'
-  using vlg_name_t = VerilogGeneratorBase::vlg_name_t;
+  using vlg_name_t = VerilogGenerator::vlg_name_t;
   /// Type of Verilog statement
-  using vlg_stmt_t = VerilogGeneratorBase::vlg_stmt_t;
+  using vlg_stmt_t = VerilogGenerator::vlg_stmt_t;
   /// Type of Verilog address
-  using vlg_addr_t = VerilogGeneratorBase::vlg_addr_t;
+  using vlg_addr_t = VerilogGenerator::vlg_addr_t;
   /// Type of Verilog data
-  using vlg_data_t = VerilogGeneratorBase::vlg_data_t;
+  using vlg_data_t = VerilogGenerator::vlg_data_t;
   /// Type of Verilog statements (a vector)
-  using vlg_stmts_t = VerilogGeneratorBase::vlg_stmts_t;
+  using vlg_stmts_t = VerilogGenerator::vlg_stmts_t;
   /// Type of Verilog names (a vector)
-  using vlg_names_t = VerilogGeneratorBase::vlg_names_t;
+  using vlg_names_t = VerilogGenerator::vlg_names_t;
   /// Type of Verilog signal, name & bw
-  using vlg_sig_t = VerilogGeneratorBase::vlg_sig_t;
+  using vlg_sig_t = VerilogGenerator::vlg_sig_t;
   /// Type of Verilog signals (a vector)
-  using vlg_sigs_t = VerilogGeneratorBase::vlg_sigs_t;
+  using vlg_sigs_t = VerilogGenerator::vlg_sigs_t;
   /// Type of a map: name -> need to add keep?
-  using vlg_sig_keep_t = VerilogGeneratorBase::vlg_sig_keep_t;
+  using vlg_sig_keep_t = VerilogGenerator::vlg_sig_keep_t;
   /// Type of set of Verilog signals
-  using vlg_sigs_set_t = VerilogGeneratorBase::vlg_sigs_set_t;
+  using vlg_sigs_set_t = VerilogGenerator::vlg_sigs_set_t;
   /// Type of Verilog ITEs (IN sequential block)
-  using vlg_ite_stmt_t = VerilogGeneratorBase::vlg_ite_stmt_t;
+  using vlg_ite_stmt_t = VerilogGenerator::vlg_ite_stmt_t;
   /// Type of Verilog ITEs statements
-  using vlg_ite_stmts_t = VerilogGeneratorBase::vlg_ite_stmts_t;
+  using vlg_ite_stmts_t = VerilogGenerator::vlg_ite_stmts_t;
   /// Type of the memorys that are going to be created
-  using vlg_mem_t = VerilogGeneratorBase::vlg_mem_t;
+  using vlg_mem_t = VerilogGenerator::vlg_mem_t;
   /// Type of collection of memorys
-  using vlg_mems_rec_t = VerilogGeneratorBase::vlg_mems_rec_t;
+  using vlg_mems_rec_t = VerilogGenerator::vlg_mems_rec_t;
   /// This is type of an individual write.
-  using mem_write_entry_t = VerilogGeneratorBase::mem_write_entry_t;
+  using mem_write_entry_t = VerilogGenerator::mem_write_entry_t;
   /// This is type of a list of writes.
-  using mem_write_entry_list_t = VerilogGeneratorBase::mem_write_entry_list_t;
+  using mem_write_entry_list_t = VerilogGenerator::mem_write_entry_list_t;
   /// Type of a stack of writes use in visitMemNodes
   using mem_write_entry_list_stack_t =
-      VerilogGeneratorBase::mem_write_entry_list_stack_t;
+      VerilogGenerator::mem_write_entry_list_stack_t;
   /// This is the write and its associated condition.
-  using mem_write_t = VerilogGeneratorBase::mem_write_t;
+  using mem_write_t = VerilogGenerator::mem_write_t;
   /// List of writes w. associated conditions.
-  using mem_write_list_t = VerilogGeneratorBase::mem_write_list_t;
+  using mem_write_list_t = VerilogGenerator::mem_write_list_t;
   /// Type for caching the generated expressions.
-  using ExprMap = VerilogGeneratorBase::ExprMap;
+  using ExprMap = VerilogGenerator::ExprMap;
   // VerilogGen Configure
   /// the structure to configure the verilog generator
-  using VlgGenConfig = VerilogGeneratorBase::VlgGenConfig;
+  using VlgGenConfig = VerilogGenerator::VlgGenConfig;
   /// Type of function apply record
-  using function_app_t = VerilogGeneratorBase::function_app_t;
+  using function_app_t = VerilogGenerator::function_app_t;
   /// Type of func app vector record
-  using function_app_vec_t = VerilogGeneratorBase::function_app_vec_t;
+  using function_app_vec_t = VerilogGenerator::function_app_vec_t;
 
 protected:
   // --------------------- MEMBERS ---------------------------- //
   vlg_names_t all_decode_signals;
 
-private:
   // --------------------- HELPER FUNCTIONS ---------------------------- //
-  /// handle a input variable (memvar/bool/bv)
-  void insertInput(const ExprPtr& input);
-  /// handle a state variable
-  void insertState(const ExprPtr& state);
+  /// Handle function application , Caller: translateBoolOp, translateBvOp
+  virtual vlg_name_t translateApplyFunc(std::shared_ptr<ExprOpAppFunc> func_app_ptr_) override;
 
-  // Here we are not using depthfirstSearch as we need to alternate between
-  // root-first/root-last traversal
-  /// traverse to the subtree, caller: ParseNonMemUpdateExpr
-  void parseArg(const ExprPtr& e);
-  /// After you parse a subtree, this can help you get the vlg name associated
-  /// with it
-  VerilogGenerator::vlg_name_t getVlgFromExpr(const ExprPtr& e);
-  /// a short cut of calling getVlgFromExpr to find arg's vlg names
-  VerilogGenerator::vlg_name_t getArg(const ExprPtr& e, const size_t& i);
   /// called by ParseNonMemUpdateExpr to deal with a boolop node
-  vlg_name_t translateBoolOp(const std::shared_ptr<ExprOp>& e);
+  virtual vlg_name_t translateBoolOp(const std::shared_ptr<ExprOp>& e) override;
   /// called by ParseNonMemUpdateExpr to deal with a bvop node
-  vlg_name_t translateBvOp(const std::shared_ptr<ExprOp>& e);
+  virtual vlg_name_t translateBvOp(const std::shared_ptr<ExprOp>& e) override;
   /// travserse an expression, not used as mem-write subtree
-  void ParseNonMemUpdateExpr(const ExprPtr& e);
+  virtual void ParseNonMemUpdateExpr(const ExprPtr& e);
 
 public:
   // --------------------- CONSTRUCTOR ---------------------------- //
@@ -100,8 +88,8 @@ public:
                    const std::string& modName = "",
                    const std::string& clk = "clk",
                    const std::string& rst = "rst");
-  /// Parse an ILA, will gen all its instructions
-  void ExportIla(const InstrLvlAbsPtr& ila_ptr_);
+  /// Parse an ILA, will gen all its instructions, and get the var used
+  void ExportDecode(const InstrLvlAbsCnstPtr& ila_ptr_, std::set<ExprPtr> & var_use_in_decodes);
   /// add a signel and assumption of the allowed sequences --- any single one is good
   void GenSequenceAssumtionsAny();
   void GenSequenceOneAtATime();

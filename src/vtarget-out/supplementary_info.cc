@@ -34,25 +34,44 @@ void VlgTgtSupplementaryInfo::FromJson(nlohmann::json& vmap) {
       std::string port = p.key();
       auto pos = port.find('.');
 
-      ILA_ERROR_IF(pos == port.npos)
-          << "memory-ports should follow NAME.PORT format";
-      if (pos == port.npos)
-        continue;
+      if (pos == port.npos) { // hope this is the "mem-name" : {"ports" : "???"} style
+        const auto & mem_name = port;
+        auto & ports_map = p.value();
+        if (!ports_map.is_object()) {
+          ILA_ERROR << "Expect map under " << mem_name;
+          continue;
+        } // not a map
+        for (auto&& port_name_expr : ports_map.items()) {
+          const auto & port_name = port_name_expr.key();
+          const auto & port_expr = port_name_expr.value().get<std::string>();
+          if (!IN(port_name, ports)) {
+            ILA_ERROR << "port name : " << port_name
+                      << " should be one of ren/wen/raddr/waddr/rdata/wdata";
+            continue;
+          }
+          memory_ports[mem_name].insert(std::make_pair(port_name, port_expr));
+        }
+      } else { // the seperated style
+        ILA_ERROR_IF(pos == port.npos)
+            << "memory-ports should follow NAME.PORT format";
+        if (pos == port.npos)
+          continue;
 
-      if (!p.value().is_string()) {
-        ILA_ERROR << "memory-ports's must be string->string map";
-        continue;
-      }
+        if (!p.value().is_string()) {
+          ILA_ERROR << "memory-ports's must be string->string map";
+          continue;
+        }
 
-      auto port_expr = p.value().get<std::string>();
-      auto mem_name = port.substr(0, pos);
-      auto port_name = port.substr(pos + 1);
-      if (!IN(port_name, ports)) {
-        ILA_ERROR << "port name : " << port_name
-                  << " should be one of ren/wen/raddr/waddr/rdata/wdata";
-        continue;
-      }
-      memory_ports[mem_name].insert(std::make_pair(port_name, port_expr));
+        auto port_expr = p.value().get<std::string>();
+        auto mem_name = port.substr(0, pos);
+        auto port_name = port.substr(pos + 1);
+        if (!IN(port_name, ports)) {
+          ILA_ERROR << "port name : " << port_name
+                    << " should be one of ren/wen/raddr/waddr/rdata/wdata";
+          continue;
+        }
+        memory_ports[mem_name].insert(std::make_pair(port_name, port_expr));
+      }  // the seperated style
     }
   }
 

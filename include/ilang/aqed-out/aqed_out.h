@@ -9,33 +9,36 @@
 
 namespace ilang {
 
-/// \brief the base class for info generator
-/// not intended to be used directly
+/// \brief the interface class for info generator
+/// must be instantiated through the factory
 /// just to hide the implementation details
-class AQedInfoGeneratorBase {
+class AQedInfoGenerator {
+  typedef std::shared_ptr<AQedInfoGenerator> AQedInfoGeneratorPtr;
 public:
   // --------------------- CONSTRUCTOR ---------------------------- //
-  AQedInfoGeneratorBase();
+  AQedInfoGenerator();
   // --------------------- DESTRUCTOR ---------------------------- //
-  virtual ~AQedInfoGeneratorBase();
+  virtual ~AQedInfoGenerator();
+
+  // --------------------- MEMBER FUNCTIONS ---------------------------- //
+  /// Export the top-level io in  a file
+  /// \param[in] filename to be exported
+  virtual void ExportVerilogTopLevelIOInfo(const std::string& fname) = 0;
+  /// Export the decode function and etc
+  /// \param[in] filename to be exported
+  virtual void ExportInstructionAndDecode(const std::string& filename) = 0;
+  /// Export the signal references
+  /// \param[in] filename to be exported
+  virtual void ExportExtraSignalReferenced(const std::string& fname) = 0;
+  /// the factory to create such an object
+  static AQedInfoGeneratorPtr Create(
+    const std::vector<std::string>& implementation_include_path,
+    const std::vector<std::string>& implementation_srcs,
+    const std::string& implementation_top_module,
+    const std::string& refinement_variable_mapping,
+    const std::string& refinement_conditions,
+    const InstrLvlAbsCnstPtr& ila_ptr_);
 }; // class AQedInfoGeneratorBase
-
-/// \brief Class for generating AQED support information
-class AQedInfoGenerator {
-  protected:
-    // --------------------- MEMBERS  ---------------------------- //
-    const InstrLvlAbsPtr& ila_ptr;
-  public:
-    // --------------------- CONSTRUCTOR ---------------------------- //
-    /// \param[in] ILA the pointer to the ila model
-    AQedInfoGenerator(const InstrLvlAbsPtr& ila_ptr_);
-
-    // --------------------- MEMBER FUNCTIONS ---------------------------- //
-    /// To export the decode functions to a file
-    /// \param[in] ILA the pointer to the ila model
-    void ExportInstructionAndDecode(const std::string& filename);
-
-}; // class AQedInfoGenerator
 
 }; // namespace ilang
 

@@ -8,25 +8,23 @@
 
 namespace ilang{
 
+#define ILA_VAR_PREFIX "__ILA_VAR_"
 
 VerilogDecodeForAQedGenerator::VerilogDecodeForAQedGenerator(const VlgGenConfig& config,
                                    const std::string& modName,
                                    const std::string& clk,
                                    const std::string& rst)
-    : VerilogGeneratorBase(config, modName, clk, rst) {}
+    : VerilogGenerator(config, modName, clk, rst) {}
 
 
-void VerilogDecodeForAQedGenerator::insertInput(const ExprPtr& input) {
-  ILA_CHECK(input->is_var());
-  // we need to consider the case of an input memory
-  if (input->is_mem()) {
-    ILA_ERROR << "mem as input : not implemented";    // add wires to
-                                                      // read from external
-  } else {
-    add_input(sanitizeName(input), get_width(input));
-    add_wire(sanitizeName(input), get_width(input));
-  }
+
+/// Handle function application , Caller: translateBoolOp, translateBvOp
+VerilogDecodeForAQedGenerator::vlg_name_t 
+VerilogDecodeForAQedGenerator::translateApplyFunc(
+  std::shared_ptr<ExprOpAppFunc> func_app_ptr_) {
+    ILA_ASSERT(false) << "Function application not supported.";
 }
+
 
 void VerilogDecodeForAQedGenerator::GenSequenceAssumtionsAny() {
   // TODO: 
@@ -39,12 +37,14 @@ void VerilogDecodeForAQedGenerator::GenSequenceOneAtATime() {
   add_stmt("// START OF ASSUMPTIONS : GenSequenceOneAtATime //");
   for (auto i = all_decode_signals.begin(); i != all_decode_signals.end() ; ++ i) {
     for (auto j = i+1; j != all_decode_signals.end(); ++j) {
-      add_stmt("assume property (!"+ *i +"&&"+ *j +");");
+      add_stmt("assume property (! ("+ *i +"&&"+ *j +") );");
     }
   }
 }
 
-void VerilogDecodeForAQedGenerator::ExportIla(const InstrLvlAbsPtr& ila_ptr_) {
+void VerilogDecodeForAQedGenerator::ExportDecode(
+    const InstrLvlAbsCnstPtr& ila_ptr_, std::set<ExprPtr> & used_vars_in_decodes) 
+{
   ILA_NOT_NULL(ila_ptr_);
 
   ILA_WARN_IF(ila_ptr_->init_num() != 0)
@@ -54,7 +54,7 @@ void VerilogDecodeForAQedGenerator::ExportIla(const InstrLvlAbsPtr& ila_ptr_) {
     moduleName = sanitizeName(ila_ptr_->name().str());
 
   { // add used vars in the set as module inputs
-    VarUseFinder<ExprPtr>::VarUseList used_vars_in_decodes;
+    // VarUseFinder<ExprPtr>::VarUseList used_vars_in_decodes;
     VarUseFinder<ExprPtr> used_vars_finder(
         [](const ExprPtr& e) {return e;}
     );
@@ -73,8 +73,16 @@ void VerilogDecodeForAQedGenerator::ExportIla(const InstrLvlAbsPtr& ila_ptr_) {
 
     }
 
-    for (auto && v : used_vars_in_decodes)
-        insertInput(v);
+    for (auto && v : used_vars_in_decodes) {
+      ILA_CHECK(v->is_var());
+
+      if (v->is_mem()) {
+        ILA_ERROR << "mem as input : not implemented";
+      } else {
+        add_output(sanitizeName(v), get_width(v));
+        add_wire(sanitizeName(v), get_width(v), true);
+      }
+    }
   } // add used vars in the set
 
   // -- get the var used in each decode of instructions
@@ -111,27 +119,101 @@ void VerilogDecodeForAQedGenerator::ExportIla(const InstrLvlAbsPtr& ila_ptr_) {
 
 } // insertInput
 
+// used in general for an expression (not the update of a memvar)
+void VerilogDecodeForAQedGenerator::ParseNonMemUpdateExpr(
+    const ExprPtr& e) { // will be used in parsing state update of non mem and
+                        // decode function
+  // memorize
 
-void VerilogDecodeForAQedGenerator::parseArg(const ExprPtr& e) {
-  for (size_t i = 0; i != e->arg_num(); ++i) {
-    ParseNonMemUpdateExpr(e->arg(i));
+  ILA_DLOG("VerilogGen.ParseNonMemUpdateExpr") << "Parsing:" << e;
+  if (nmap.find(e) != nmap.end()) {
+    ILA_DLOG("VerilogGen.ParseNonMemUpdateExpr") << "Cached.";
+    return;
   }
-}
 
-VerilogDecodeForAQedGenerator::vlg_name_t VerilogDecodeForAQedGenerator::getArg(const ExprPtr& e,
-                                                      const size_t& i) {
-  auto arg_i = e->arg(i);
-  return getVlgFromExpr(arg_i);
-}
+  if (e->is_bool()) {
+    if (e->is_var()) {
+      nmap[e] = ILA_VAR_PREFIX + sanitizeName(e); // just use its name
+      ILA_DLOG("VerilogGen.ParseNonMemUpdateExpr")
+          << "BoolVar: " << e->name().str();
+    } else if (e->is_op()) { // bool op
+      // leaves first,
+      ILA_DLOG("VerilogGen.ParseNonMemUpdateExpr") << "BoolOp, leaves-first ";
+      parseArg(e);
+      std::shared_ptr<ExprOp> expr_op_ptr =
+          std::dynamic_pointer_cast<ExprOp>(e);
+      ILA_NOT_NULL(expr_op_ptr);
+      nmap[e] = translateBoolOp(expr_op_ptr);
+    } else if (e->is_const()) { // bool const
+      vlg_name_t bcnst =
+          vlg_name_t("1'b") +
+          (std::dynamic_pointer_cast<ExprConst>(e)->val_bool()->val() ? "1"
+                                                                      : "0");
+      ILA_DLOG("VerilogGen.ParseNonMemUpdateExpr") << "BoolConst: " << bcnst;
+      nmap[e] = bcnst;
+    } else
+      ILA_ASSERT(false) << "Expr sort: " << (e->sort()) << " is not supported.";
+  } else if (e->is_bv()) {
+    if (e->is_var()) {
+      nmap[e] = ILA_VAR_PREFIX + sanitizeName(e); // just use its name
+      ILA_DLOG("VerilogGen.ParseNonMemUpdateExpr") << "BV: " << e->name().str();
+    } else if (e->is_op()) {
+      // leaves first
+      std::shared_ptr<ExprOp> expr_op_ptr =
+          std::dynamic_pointer_cast<ExprOp>(e);
+      ILA_NOT_NULL(expr_op_ptr);
 
-VerilogDecodeForAQedGenerator::vlg_name_t
-VerilogDecodeForAQedGenerator::getVlgFromExpr(const ExprPtr& e) {
+      ILA_DLOG("VerilogGen.ParseNonMemUpdateExpr") << "BVop, leaves-first ";
+      parseArg(e); // if not LOAD, leaf-first
+      // BTW, you cannot cache the LOAD(STORE/ITE/MEMCONST) pattern
+      nmap[e] = translateBvOp(expr_op_ptr);
+    } else if (e->is_const()) {
+      int width = get_width(e);
+      ILA_ASSERT(width > 0);
+      IlaBvValType value =
+          (std::dynamic_pointer_cast<ExprConst>(e)->val_bv()->val());
+      vlg_name_t result_var;
 
-  auto pos = nmap.find(e);
-  ILA_ASSERT(pos != nmap.end())
-      << "Expr:" << (e) << " has not been translated yet";
-  return pos->second;
-}
+      auto pos = cmap.find(std::make_pair(value, (unsigned)width));
+      if (pos == cmap.end()) { // not found
+        vlg_const_t bvcnst = ToVlgNum(value, (unsigned)width);
+        result_var = "bv_" + std::to_string(width) + "_" +
+                     std::to_string(IlaBvValUnsignedType(value)) + "_" + new_id(e);
+        add_wire(result_var, get_width(e));
+        add_assign_stmt(result_var, bvcnst);
+
+        ILA_DLOG("VerilogGen.ParseNonMemUpdateExpr")
+            << "BVconst: " << bvcnst << " as " << result_var;
+        cmap.insert(
+            std::make_pair(std::make_pair(value, (unsigned)width), result_var));
+      } else { // found
+        result_var = pos->second;
+      }
+      nmap[e] = result_var;
+    } else
+      ILA_ASSERT(false) << "Expr sort: " << (e->sort()) << " is not supported.";
+
+  } else if (e->is_mem()) {
+    // TODO: ?
+    if (e->is_var())
+      nmap[e] = ILA_VAR_PREFIX + sanitizeName(e); // should not be used
+    else if (e->is_const())
+      nmap[e] = sanitizeName(e); // should not be used, currently unsupported
+    else if (e->is_op())
+      ILA_ASSERT(false)
+          << "Implementation bug, do not support mem_op ( "
+             "LOAD(STORE/ITE/MEMCONST) pattern ) in non-mem-update expression";
+    // NOTE: EVEN when we later implement the three LOAD(STORE/ITE/MEMCONST)
+    // pattern it should not come to this point, because the load will do a
+    // root-first traversal it should not come to this point first
+    else
+      ILA_ASSERT(false) << "Expr sort: " << (e->sort()) << " is not supported.";
+    // (Yes we may encounter the var case), just return its name (but I think it
+    // will not be used anyway) (Yes we may encounter the memconst case),
+    // currently not handled, so just return its name is fine
+  } else
+    ILA_ASSERT(false) << "Expr sort: " << (e->sort()) << " is not supported.";
+} // ParseNonMemUpdateExpr
 
 
 // will be used by ParseNonMemUpdateExpr, will not be directly called by
@@ -310,101 +392,5 @@ VerilogDecodeForAQedGenerator::translateBvOp(const std::shared_ptr<ExprOp>& e) {
 }
 
 
-//--------------------------------------------------------------------------
-// used in general for an expression (not the update of a memvar)
-void VerilogDecodeForAQedGenerator::ParseNonMemUpdateExpr(
-    const ExprPtr& e) { // will be used in parsing state update of non mem and
-                        // decode function
-  // memorize
-
-  ILA_DLOG("VerilogDecodeForAQedGenerator.ParseNonMemUpdateExpr") << "Parsing:" << e;
-  if (nmap.find(e) != nmap.end()) {
-    ILA_DLOG("VerilogDecodeForAQedGenerator.ParseNonMemUpdateExpr") << "Cached.";
-    return;
-  }
-
-  if (e->is_bool()) {
-    if (e->is_var()) {
-      nmap[e] = sanitizeName(e); // just use its name
-      ILA_DLOG("VerilogDecodeForAQedGenerator.ParseNonMemUpdateExpr")
-          << "BoolVar: " << e->name().str();
-    } else if (e->is_op()) { // bool op
-      // leaves first,
-      ILA_DLOG("VerilogDecodeForAQedGenerator.ParseNonMemUpdateExpr") << "BoolOp, leaves-first ";
-      parseArg(e);
-      std::shared_ptr<ExprOp> expr_op_ptr =
-          std::dynamic_pointer_cast<ExprOp>(e);
-      ILA_NOT_NULL(expr_op_ptr);
-      nmap[e] = translateBoolOp(expr_op_ptr);
-    } else if (e->is_const()) { // bool const
-      vlg_name_t bcnst =
-          vlg_name_t("1'b") +
-          (std::dynamic_pointer_cast<ExprConst>(e)->val_bool()->val() ? "1"
-                                                                      : "0");
-      ILA_DLOG("VerilogDecodeForAQedGenerator.ParseNonMemUpdateExpr") << "BoolConst: " << bcnst;
-      nmap[e] = bcnst;
-    } else
-      ILA_ASSERT(false) << "Expr sort: " << (e->sort()) << " is not supported.";
-  } else if (e->is_bv()) {
-    if (e->is_var()) {
-      nmap[e] = sanitizeName(e); // just use its name
-      ILA_DLOG("VerilogDecodeForAQedGenerator.ParseNonMemUpdateExpr") << "BV: " << e->name().str();
-    } else if (e->is_op()) {
-      // leaves first
-      std::shared_ptr<ExprOp> expr_op_ptr =
-          std::dynamic_pointer_cast<ExprOp>(e);
-      ILA_NOT_NULL(expr_op_ptr);
-
-      ILA_DLOG("VerilogDecodeForAQedGenerator.ParseNonMemUpdateExpr") << "BVop, leaves-first ";
-      parseArg(e); // if not LOAD, leaf-first
-      // BTW, you cannot cache the LOAD(STORE/ITE/MEMCONST) pattern
-      nmap[e] = translateBvOp(expr_op_ptr);
-    } else if (e->is_const()) {
-      int width = get_width(e);
-      ILA_ASSERT(width > 0);
-      IlaBvValType value =
-          (std::dynamic_pointer_cast<ExprConst>(e)->val_bv()->val());
-      vlg_name_t result_var;
-
-      auto pos = cmap.find(std::make_pair(value, (unsigned)width));
-      if (pos == cmap.end()) { // not found
-        vlg_const_t bvcnst = ToVlgNum(value, (unsigned)width);
-        result_var = "bv_" + std::to_string(width) + "_" +
-                     std::to_string(IlaBvValUnsignedType(value)) + "_" + new_id(e);
-        add_wire(result_var, get_width(e));
-        add_assign_stmt(result_var, bvcnst);
-
-        ILA_DLOG("VerilogDecodeForAQedGenerator.ParseNonMemUpdateExpr")
-            << "BVconst: " << bvcnst << " as " << result_var;
-        cmap.insert(
-            std::make_pair(std::make_pair(value, (unsigned)width), result_var));
-      } else { // found
-        result_var = pos->second;
-      }
-      nmap[e] = result_var;
-    } else
-      ILA_ASSERT(false) << "Expr sort: " << (e->sort()) << " is not supported.";
-
-  } else if (e->is_mem()) {
-    // TODO: ?
-    if (e->is_var())
-      nmap[e] = sanitizeName(e); // should not be used
-    else if (e->is_const())
-      nmap[e] = sanitizeName(e); // should not be used, currently unsupported
-    else if (e->is_op())
-      ILA_ASSERT(false)
-          << "Implementation bug, do not support mem_op ( "
-             "LOAD(STORE/ITE/MEMCONST) pattern ) in non-mem-update expression";
-    // NOTE: EVEN when we later implement the three LOAD(STORE/ITE/MEMCONST)
-    // pattern it should not come to this point, because the load will do a
-    // root-first traversal it should not come to this point first
-    else
-      ILA_ASSERT(false) << "Expr sort: " << (e->sort()) << " is not supported.";
-    // (Yes we may encounter the var case), just return its name (but I think it
-    // will not be used anyway) (Yes we may encounter the memconst case),
-    // currently not handled, so just return its name is fine
-  } else
-    ILA_ASSERT(false) << "Expr sort: " << (e->sort()) << " is not supported.";
-} // ParseNonMemUpdateExpr
 
 }; // namespace ilang
