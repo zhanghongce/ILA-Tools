@@ -192,105 +192,54 @@ void VlgSglTgtGen::ConstructWrapper_add_uf_constraints() {
     ILA_ERROR << "lacking function map for func:" << nf.first;
 } // ConstructWrapper_add_uf_constraints
 
-int VlgSglTgtGen::ConstructWrapper_add_post_value_holder_handle_obj(
-    nlohmann::json& pv_cond_val, const std::string& pv_name, int width,
-    bool create_reg) {
-
-  std::string cond = VLG_TRUE;
-  std::string val = "'hx";
-  std::string original_val_field;
-
-  for (auto&& cond_val_pair : pv_cond_val.items()) {
-    if (cond_val_pair.key() == "cond")
-      cond = ReplExpr(cond_val_pair.value(), true);
-    else if (cond_val_pair.key() == "val") {
-      original_val_field = cond_val_pair.value();
-      StrTrim(original_val_field);
-      val = ReplExpr(original_val_field, true);
-    } else if (cond_val_pair.key() == "width") {
-      if (cond_val_pair.value().is_string()) {
-        ILA_CHECK(cond_val_pair.value().get<std::string>() == "auto")
-            << "Expecting width to be unsigned int / auto";
-        ILA_CHECK(!original_val_field.empty())
-            << "You must first provide `val` field before auto";
-        if (original_val_field.find("[") != original_val_field.npos)
-          original_val_field =
-              original_val_field.substr(0, original_val_field.find("["));
-        if (S_IN("=", original_val_field)) {
-          ILA_WARN << "Creating value-holder for conditions";
-          width = 1;
-        } else if (vlg_info_ptr->check_hierarchical_name_type(
-                       original_val_field) !=
-                   VerilogInfo::hierarchical_name_type::NONE) {
-          auto vlg_sig_info = vlg_info_ptr->get_signal(
-              original_val_field, supplementary_info.width_info);
-          width = vlg_sig_info.get_width();
-        } else if (vlg_info_ptr->check_hierarchical_name_type(
-                       _vlg_mod_inst_name + "." + original_val_field) !=
-                   VerilogInfo::hierarchical_name_type::NONE) {
-          auto vlg_sig_info = vlg_info_ptr->get_signal(
-              _vlg_mod_inst_name + "." + original_val_field,
-              supplementary_info.width_info);
-          width = vlg_sig_info.get_width();
-        } else {
-          ILA_ERROR << "Cannot auto-determine value-holder width for val:"
-                    << original_val_field;
-          width = 0;
-        }
-      } else
-        width = cond_val_pair.value().get<int>();
-    } else
-      ILA_ERROR << "Unexpected key: " << cond_val_pair.key()
-                << " in post-value-holder, expecting 0-2 or cond/val/width";
-  }
-  ILA_WARN_IF(val == "'hx") << "val field is not provided for " << pv_name;
-  ILA_WARN_IF(cond == VLG_TRUE) << "cond field is not provided for " << pv_name;
-  ILA_ERROR_IF(width <= 0 && create_reg)
-      << "Cannot create signal for " << pv_name << " : unknown width!";
-  if (width >= 0 && create_reg) { // error
-    // ILA_ERROR << "width of post-value-holder `" << pv_name << "` is
-    // unknown!";
-    vlg_wrapper.add_reg(pv_name, width);
-  }
-  add_reg_cassign_assumption(pv_name, val, width, cond, "post_value_holder");
-
-  return width;
-}
 
 void VlgSglTgtGen::ConstructWrapper_add_post_value_holder() {
-  if (!IN("post-value-holder", rf_vmap) && !IN("value-holder", rf_vmap))
-    return; // no need for it
-  ILA_WARN_IF(IN("post-value-holder", rf_vmap))
-      << "The name `post-value-holder` will be deprecated in the future, "
-      << "please use `value-holder` instead";
-  auto& post_val_rec = IN("value-holder", rf_vmap)
-                           ? rf_vmap["value-holder"]
-                           : rf_vmap["post-value-holder"];
-  if (!post_val_rec.is_object()) {
-    ILA_ERROR << "Expect (post-)value-holder to be map-type";
-    return;
-  }
-  for (auto&& item : post_val_rec.items()) {
-    const auto& pv_name = item.key();
-    auto& pv_cond_val = item.value();
-    ILA_ERROR_IF(!(pv_cond_val.is_array() || pv_cond_val.is_object()))
-        << "Expecting (post-)value-holder's content to be list or map type";
-    if (pv_cond_val.is_array() &&
-        (!pv_cond_val.empty() &&
-         (pv_cond_val.begin()->is_array() ||
-          pv_cond_val.begin()->is_object()))) { // multiple condition
-      int w = 0;
-      bool first = true;
-      for (auto ptr = pv_cond_val.begin(); ptr != pv_cond_val.end(); ++ptr) {
-        w = ConstructWrapper_add_post_value_holder_handle_obj(*ptr, pv_name, w,
-                                                              first);
-        first = false;
+  for (auto && vh: varmap.value_holders) {
+    ILA_CHECK(!vh.exprs.empty()) << "Empty value holder : " << vh.name;
+    // determine the width
+    unsigned width = vh.width;
+    if (vh.auto_width) {
+      auto original_val_field = vh.exprs[0].first;
+      StrTrim(original_val_field);
+      ILA_CHECK(!original_val_field.empty())
+          << "You must first provide `val` field for auto-det width of value-holder";
+      
+      if (original_val_field.find("[") != original_val_field.npos)
+        original_val_field =
+            original_val_field.substr(0, original_val_field.find("["));
+      
+      if (S_IN("=", original_val_field)) {
+        ILA_WARN << "Creating value-holder for conditions";
+        width = 1;
+      } else if (vlg_info_ptr->check_hierarchical_name_type(
+                      original_val_field) !=
+                  VerilogInfo::hierarchical_name_type::NONE) {
+        auto vlg_sig_info = vlg_info_ptr->get_signal(
+            original_val_field, supplementary_info.width_info);
+        width = vlg_sig_info.get_width();
+      } else if (vlg_info_ptr->check_hierarchical_name_type(
+                      _vlg_mod_inst_name + "." + original_val_field) !=
+                  VerilogInfo::hierarchical_name_type::NONE) {
+        auto vlg_sig_info = vlg_info_ptr->get_signal(
+            _vlg_mod_inst_name + "." + original_val_field,
+            supplementary_info.width_info);
+        width = vlg_sig_info.get_width();
+      } else {
+        ILA_ERROR << "Cannot auto-determine value-holder width for val:"
+                  << original_val_field;
+        width = 0;
       }
-    } else { // it is just a single line
-      ConstructWrapper_add_post_value_holder_handle_obj(pv_cond_val, pv_name, 0,
-                                                        true);
+    } // if auto-det width
+    if (width == 0)
+      continue; // skip this holder
+    vlg_wrapper.add_reg(vh.name, width);
+    for (auto && val_cond: vh.exprs) {
+      ILA_CHECK(!S_IN('@', val_cond.first) && !S_IN('@', val_cond.second));
+      // otherwise there will be loop in ReplExpr
+      add_reg_cassign_assumption(
+        vh.name, ReplExpr(val_cond.first), width, ReplExpr(val_cond.second), "post_value_holder"); 
     }
-  } // for item
+  }
 } // ConstructWrapper_add_post_value_holder
 
 void VlgSglTgtGen::ConstructWrapper_add_vlg_monitor() {

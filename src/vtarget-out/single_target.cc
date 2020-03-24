@@ -105,6 +105,7 @@ VlgSglTgtGen::VlgSglTgtGen(
                        (IN("global-invariants", _rf_cond) &&
                        rf_cond["global-invariants"].size() != 0)
                        ),
+      varmap(rf_vmap), // parse the varmap
       mapping_counter(0), property_counter(0), top_mod_name(wrapper_name),
       vlg_design_files(implementation_srcs),
       vlg_include_files_path(implementation_include_path),

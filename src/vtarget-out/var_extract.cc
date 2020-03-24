@@ -37,10 +37,13 @@ bool isStateBegin(unsigned char c) {
   return std::isalpha(c) || c == '#' || c == '_' || c == '$' ;
 }
 
-bool isStateCont(unsigned char c, size_t idx, const std::string& s) {
+bool isStateCont(unsigned char c, size_t idx, const std::string& s, size_t left) {
   if (std::isalpha(c) || std::isdigit(c) || c == '.' || c == '_' || c == ']' || c == '$')
     return true;
   if (!s.empty() && s.front() == '#' && c == '#')
+    return true;
+  auto sub_string = s.substr(left,idx-left);
+  if (!sub_string.empty() && sub_string.find('@') == sub_string.npos && c == '@')
     return true;
   else if (c == '[') {
     auto rp = s.find(']', idx);
@@ -52,6 +55,20 @@ bool isStateCont(unsigned char c, size_t idx, const std::string& s) {
     // but actually we need to check
     return true;
     // we are not sure of it actually
+  }
+  else if (!sub_string.empty() && sub_string.find('@') != sub_string.npos) {
+    if (c == '(' && idx == sub_string.find('@') + 1)
+      return true;
+    // check for paranthesis level
+    auto pos = sub_string.find('@') + 1;
+    int lvl = 0;
+    for (;pos != sub_string.length(); ++pos)
+      if (sub_string.at(pos) == '(')
+        lvl ++;
+      else if (sub_string.at(pos) == ')')
+        lvl --;
+    if (lvl != 0)
+      return true;
   }
   return false;
 }
@@ -84,7 +101,7 @@ void VarExtractor::ParseToExtract(const std::string& in,
   for (; idx < l; ++idx) {
     bool is_num_new =
         (is_num && isNumCont(in.at(idx))) || isNumBegin(in.at(idx));
-    bool is_state_new = (is_state && isStateCont(in.at(idx), idx, in)) ||
+    bool is_state_new = (is_state && isStateCont(in.at(idx), idx, in, left)) ||
                         isStateBegin(in.at(idx));
 
     if (is_num && is_state) {
@@ -111,9 +128,11 @@ void VarExtractor::ParseToExtract(const std::string& in,
         }      // if # # [2:3] .. like this , will not convert at all
         else { // else normal ones
           // deal with []
-          auto left_p = subs.find('[');
+          auto left_at = subs.find('@');
+          auto no_at = subs.substr(0, left_at);
+          auto left_p = no_at.find('[');
           auto check_s =
-              subs.substr(0, left_p); // the string use to check no []
+              no_at.substr(0, left_p); // the string use to check no []
 
           if (_is_ila_state(check_s) && !force_vlg_statename)
             tp = ILA_S;
@@ -162,8 +181,10 @@ void VarExtractor::ParseToExtract(const std::string& in,
         _tokens.push_back({KEEP, ReplaceAll(subs, "#", "")});
       else {
         token_type tp;
-        auto left_p = subs.find('[');
-        auto check_s = subs.substr(0, left_p); // the string use to check no []
+        auto left_at = subs.find('@');
+        auto no_at = subs.substr(0, left_at);
+        auto left_p = no_at.find('[');
+        auto check_s = no_at.substr(0, left_p); // the string use to check no []
         if (_is_ila_state(check_s) && !force_vlg_statename)
           tp = ILA_S;
         else if (_is_ila_input(check_s) && !force_vlg_statename)

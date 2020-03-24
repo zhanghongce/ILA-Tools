@@ -25,6 +25,7 @@
 #include <ilang/smt-inout/yosys_smt_parser.h>
 #include <ilang/verilog-in/verilog_analysis_wrapper.h>
 #include <ilang/verilog-out/verilog_gen.h>
+#include <ilang/vtarget-out/rfmap.h>
 #include <ilang/vtarget-out/directive.h>
 #include <ilang/vtarget-out/supplementary_info.h>
 #include <ilang/vtarget-out/var_extract.h>
@@ -153,6 +154,8 @@ protected:
   const bool has_confirmed_synthesized_invariant;
   /// has rf provided invariant
   const bool has_rf_invariant;
+  /// the parsed varmap rfmap
+  refinement::RefinementVerilogVarmap  varmap;
 
 private:
   /// Counter of mapping
@@ -166,6 +169,8 @@ protected:
   std::string new_mapping_id();
   /// Return a new variable name for property
   std::string new_property_id();
+  /// add a value holder from the given val/cond pair
+  std::string add_value_holder(const std::string& val, const std::string& cond);
   /// Modify a token and record its use
   std::string ModifyCondExprAndRecordVlgName(const VarExtractor::token& t);
   /// Parse and modify a condition string
@@ -225,10 +230,6 @@ protected:
   void ConstructWrapper_add_uf_constraints();
   /// Add post value holder (val @ cond == ...)
   void ConstructWrapper_add_post_value_holder();
-  /// A sub function of the above post-value-holder hanlder
-  int ConstructWrapper_add_post_value_holder_handle_obj(
-      nlohmann::json& pv_cond_val, const std::string& pv_name, int width,
-      bool create_reg);
   /// Add Verilog inline monitor
   void ConstructWrapper_add_vlg_monitor();
 

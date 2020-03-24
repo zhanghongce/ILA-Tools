@@ -125,6 +125,33 @@ std::set<std::string> wrapper_signals = {
     "__STARTED__",  "__RESETED__",    "__ENDED__",
     "__ENDFLUSH__", "__FLUSHENDED__", "__CYCLE_CNT__"};
 
+std::string VlgSglTgtGen::add_value_holder(
+  const std::string& val, const std::string& cond) {
+  ILA_CHECK(!val.empty()) << "Empty value for value holder!";
+  ILA_CHECK(!cond.empty()) << "Empty condition for value holder!";
+    // check if cond is pure digits
+  bool pure_digit_cond = std::all_of(cond.begin(), cond.end(), ::isdigit);
+  std::string real_cond = cond;
+  if (pure_digit_cond) {
+    real_cond = "__CYCLE_CNT__ == " + cond;
+  }
+  // look into the existing val-cond-pair to see if there are matches
+  for (auto && vh : varmap.value_holders) {
+    if (vh.exprs.size() == 1 && 
+        vh.exprs[0].first == val && 
+        vh.exprs[0].second == real_cond)
+      return vh.name;
+  }
+  // not found
+  std::string pv_name = "__implicit_value_holder" + std::to_string( varmap.value_holders.size() );
+  varmap.value_holders.push_back(refinement::ValueHolder(pv_name));
+  varmap.value_holders.back().auto_width = true;
+  varmap.value_holders.back().exprs.push_back(std::make_pair(val, real_cond));
+  ILA_INFO << "Create value holder " << pv_name;
+  return pv_name;
+} // add_value_holder
+
+
 // for ila state: add __ILA_SO_
 // for verilog signal: keep as it is should be fine
 // btw, record all referred vlg name
@@ -194,6 +221,8 @@ VlgSglTgtGen::ModifyCondExprAndRecordVlgName(const VarExtractor::token& t) {
     // else -- only leave it here
     return sname; // NC
   } else if (token_tp == VarExtractor::token_type::ILA_S) {
+    ILA_ERROR_IF(S_IN('@', sname)) << "ILA state : " << sname << " should not contain `@`";
+
     std::string quote = "";
     auto left_p = sname.find('[');
     auto check_s = sname.substr(0, left_p);
@@ -214,6 +243,7 @@ VlgSglTgtGen::ModifyCondExprAndRecordVlgName(const VarExtractor::token& t) {
         << "Implementation bug: should not be reachable. token_tp: ILA_S";
     return sname;
   } else if (token_tp == VarExtractor::token_type::ILA_IN) {
+    ILA_ERROR_IF(S_IN('@', sname)) << "ILA input : " << sname << " should not contain `@`";
     auto left_p = sname.find('[');
     auto check_s = sname.substr(0, left_p);
     auto range_s = left_p != std::string::npos ? sname.substr(left_p) : "";
@@ -235,7 +265,16 @@ VlgSglTgtGen::ModifyCondExprAndRecordVlgName(const VarExtractor::token& t) {
         << "Implementation bug: should not be reachable. token_tp: ILA_IN";
     return sname;
   } else if (token_tp == VarExtractor::token_type::VLG_S) {
-
+    // Deal with the case with
+    auto at_pos = sname.find('@');
+    auto check_name = sname.substr(0,at_pos);
+    if (at_pos != std::string::npos) {
+      // record !
+      auto cond_name = sname.substr(at_pos+1);
+      auto used_name = add_value_holder(check_name, cond_name);
+      return used_name;
+      // change used_name (pv name)
+    }
     // do nothing for JasperGold
     // will not add to the all_referred name, so will not modify verilog
     if (_backend == backend_selector::JASPERGOLD)
