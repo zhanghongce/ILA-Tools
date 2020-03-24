@@ -3,6 +3,7 @@
 verify/*
 verify_jg/*
 verify_pvholder/*
+verify_pvholder_implicit/*
 disprove/*
 vmem/invariants
 vmem/SWAP
@@ -16,4 +17,7 @@ undetf/INST
 undetf/INST2
 undetf/INST3
 undetf2/INST
+vmem/vmem-eq/SWAP/*
+vmem/vmem-eq/SWAPExpand/*
+
 
