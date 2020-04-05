@@ -111,4 +111,11 @@ InstrIdxKeyVecPtr InstrSeq::Sort() {
   return sorted_;
 }
 
+ItNodePtr InstrSeq::Node(const InstrPtr& instr) const {
+  auto pos = nodes_.find(instr);
+  if (pos == nodes_.end())
+    return NULL;
+  return pos->second;
+}
+
 } // namespace ilang

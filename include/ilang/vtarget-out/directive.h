@@ -69,6 +69,8 @@ public:
   static bool beginsWith(const std::string& c, const std::string& s);
   /// Return true if 'c' is special input directive
   static bool isSpecialInputDir(const std::string& c);
+  // Return nonempty string if 'c' has special reset signal in its encoding
+  static std::string isSpecialInputDirResetName(const std::string& c);
   /// Check for compatibility
   static bool isSpecialInputDirCompatibleWith(const std::string& c,
                                               const SignalInfoBase& vlg_sig);
@@ -83,6 +85,8 @@ public:
   // ------------------------ MEMBERS ------------------------ //
   /// clear all internal storage
   void Clear(bool reset_vlg);
+  /// for the outside to decide if we need to reset verilog
+  bool GetResetVerilog() const { return _reset_vlg; }
   /// Return a string used for instantiating
   std::string GetVlgModInstString(VerilogGeneratorBase& gen) const;
   /// Add signals to the wrapper_generator

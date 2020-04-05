@@ -45,6 +45,10 @@ const InstrLvlAbsPtr InstrLvlAbs::child(const std::string& name) const {
   return child;
 }
 
+const ItNodePtr InstrLvlAbs::trans(const InstrPtr& instr) const {
+  return instr_seq_.Node(instr);
+}
+
 const ExprPtr InstrLvlAbs::find_input(const Symbol& name) const {
   auto pos = inputs_.find(name);
   return (pos == inputs_.end()) ? NULL : pos->second;

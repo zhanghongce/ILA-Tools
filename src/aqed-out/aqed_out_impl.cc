@@ -126,7 +126,10 @@ void AQedInfoGeneratorImpl::ExportInstructionAndDecode(const std::string& filena
       ILA_ERROR_IF(refstr.empty())
         << "Verilog IO: " << name_siginfo_pair.first << "is missing in"
         << " interface-mapping";
-      if (IntefaceDirectiveRecorder::isSpecialInputDir(refstr))
+      auto reset_sig = IntefaceDirectiveRecorder::isSpecialInputDirResetName(refstr);
+      if (!reset_sig.empty()) 
+        refstr = reset_sig;
+      else if (IntefaceDirectiveRecorder::isSpecialInputDir(refstr))
         continue;
       if (!IN(refstr,used_vars_names))
         continue; // not referring to something we create with "__ILA_VAR_"
@@ -172,6 +175,7 @@ void AQedInfoGeneratorImpl::ExportInstructionAndDecode(const std::string& filena
   } 
   // Question: do we do the same for assumptions?
 
+  vlg_gen.GenValidSequenceAssumption(_ila_ptr);
   // deal with the case that used_vars_in_decodes are not inputs
   // dump in ExportExtraSignalReferenced, but you need to add inputs
   RegisterExtraVlgReferenceWire(vlg_gen);

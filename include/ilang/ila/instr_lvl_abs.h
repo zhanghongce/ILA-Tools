@@ -113,6 +113,8 @@ public:
   const InstrPtr instr(const std::string& name) const;
   /// Return the named child-ILA; return NULL if not registered.
   const InstrLvlAbsPtr child(const std::string& name) const;
+  /// Return the instruction sequence
+  const ItNodePtr trans(const InstrPtr& instr) const;
 
   /// Return the named input variable; return NULL if not registered.
   const ExprPtr find_input(const Symbol& name) const;

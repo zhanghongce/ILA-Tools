@@ -633,6 +633,11 @@ Ila Ila::NewChild(const std::string& name) {
   return Ila(m);
 }
 
+void Ila::AddSeqTran(const InstrRef& instr1,
+  const InstrRef& instr2, const ExprRef& condition) {
+  ptr_->AddSeqTran(instr1.get(), instr2.get(), condition.get());  
+}
+
 size_t Ila::input_num() const { return ptr_->input_num(); }
 
 size_t Ila::state_num() const { return ptr_->state_num(); }

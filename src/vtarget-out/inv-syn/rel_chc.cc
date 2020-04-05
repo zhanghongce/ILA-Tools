@@ -549,10 +549,10 @@ bool static extractSigDefFromLine(
         nlohmann::json & ifmap = IN("interface mapping", rf_vmap) ? rf_vmap["interface mapping"] : rf_vmap["interface-mapping"];
         ILA_CHECK(ifmap.is_object());
         for (auto&& item : ifmap.items()) {
-          if (item.value() == "**RESET**") {
+          if (item.value().get<std::string>().find("**RESET**") == 0 ) {
             rst_sig = item.key();
             rst_neg = false;
-          } else if (item.value() == "**NRESET**") {
+          } else if (item.value().get<std::string>().find("**NRESET**") == 0) {
             rst_sig = item.key();
             rst_neg = true;
           }

@@ -409,6 +409,7 @@ void VlgSglTgtGen::ConstructWrapper() {
   ILA_DLOG("VtargetGen") << "STEP:" << 2;
 
   // 1. dealing with reset
+  // dummy reset is always pos-active
   ConstructWrapper_reset_setup();
 
   ILA_DLOG("VtargetGen") << "STEP:" << 3;

@@ -89,10 +89,16 @@ public:
                    const std::string& clk = "clk",
                    const std::string& rst = "rst");
   /// Parse an ILA, will gen all its instructions, and get the var used
-  void ExportDecode(const InstrLvlAbsCnstPtr& ila_ptr_, std::set<ExprPtr> & var_use_in_decodes);
+  void ExportDecode(const InstrLvlAbsCnstPtr& ila_ptr_, 
+    std::set<ExprPtr> & var_use_in_decodes);
   /// add a signel and assumption of the allowed sequences --- any single one is good
   void GenSequenceAssumtionsAny();
   void GenSequenceOneAtATime();
+
+  // for the trans seq in ILA specification, generate the sequence for it
+  // but you probably need to specify a bound
+  void GenValidSequenceAssumption(const InstrLvlAbsCnstPtr& ila_ptr_);
+
   /// add a signel and assumption of the allowed sequences --- give a bad state and
   /// try enumerate sequence with out reaching that state
   // Not implemented yet

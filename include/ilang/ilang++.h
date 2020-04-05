@@ -517,6 +517,13 @@ public:
   /// \param[in] name child-ILA name.
   Ila NewChild(const std::string& name);
 
+  /// \brief Declare a sequence of legal instructions.
+  /// \param[in] instr1 from this instruction
+  /// \param[in] instr2 to this instruction
+  /// \param[in] condition the condition of transition
+  void AddSeqTran(const InstrRef& instr1, const InstrRef& instr2, const ExprRef& condition);
+
+
   // ------------------------- GENERATORS --------------------------------- //
   /// \brief Export an ILA as Verilog
   /// \param[in] fout the output stream of the generated Verilog source.

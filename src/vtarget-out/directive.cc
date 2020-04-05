@@ -19,6 +19,18 @@ bool IntefaceDirectiveRecorder::beginsWith(const std::string& c,
   return StrStartsWith(c, s);
 }
 
+
+// static function
+std::string IntefaceDirectiveRecorder::isSpecialInputDirResetName(const std::string& c) {
+  if (!beginsWith(c, "**"))
+    return "";
+  if (beginsWith(c, "**RESET**"))
+    return c.substr(9);
+  if (beginsWith(c, "**NRESET**"))
+    return c.substr(10);
+  return "";  
+}
+
 // static function
 bool IntefaceDirectiveRecorder::isSpecialInputDir(const std::string& c) {
   return beginsWith(c, "**");
@@ -250,14 +262,14 @@ void IntefaceDirectiveRecorder::RegisterInterface(const SignalInfoBase& vlg_sig,
           << "Forcing a non-output signal to be connected as output:"
           << short_name;
       ConnectModuleOutputAddWire(short_name, width);
-    } else if (refstr == "**RESET**") {
+    } else if (refstr.find("**RESET**") == 0) {
       if (_reset_vlg)
         mod_inst_rec.insert(
             {short_name, inf_connector_t({inf_dir_t::RESET, "rst"})});
       else
         mod_inst_rec.insert(
             {short_name, inf_connector_t({inf_dir_t::RESET, "dummy_reset"})});
-    } else if (refstr == "**NRESET**") {
+    } else if (refstr.find("**NRESET**") == 0 ) {
       if (_reset_vlg)
         mod_inst_rec.insert(
             {short_name, inf_connector_t({inf_dir_t::RESET, "~rst"})});

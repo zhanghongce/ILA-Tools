@@ -131,6 +131,9 @@ public:
   /// Sort the instructions based on the control flow.
   InstrIdxKeyVecPtr Sort();
 
+  /// Get the node from instruction pointer
+  ItNodePtr Node(const InstrPtr& instr) const;
+
 private:
   // ------------------------- MEMBERS -------------------------------------- //
   /// The set of transition relations (edges).
@@ -145,6 +148,9 @@ private:
 
 /// Pointer type for passing around InstrSeq.
 typedef InstrSeq::InstrSeqPtr InstrSeqPtr;
+
+/// Pointer type for passing around instruction transition node
+typedef InstrTranNode::ItNodePtr ItNodePtr;
 
 } // namespace ilang
 

@@ -9,6 +9,10 @@
 namespace ilang{
 
 #define ILA_VAR_PREFIX "__ILA_VAR_"
+#define DECODE_NAME(ila_ptr_, instr_ptr_)  \
+                      ("__ILA_" + sanitizeName(ila_ptr_->name().str()) + \
+                      "_decode_of_" + sanitizeName(instr_ptr_->name().str()) + \
+                      "__")
 
 VerilogDecodeForAQedGenerator::VerilogDecodeForAQedGenerator(const VlgGenConfig& config,
                                    const std::string& modName,
@@ -29,7 +33,7 @@ VerilogDecodeForAQedGenerator::translateApplyFunc(
 void VerilogDecodeForAQedGenerator::GenSequenceAssumtionsAny() {
   // TODO: 
   add_stmt("// START OF ASSUMPTIONS : SequenceAssumtionsAny //");
-  add_stmt("any_valid_instr : assume property ("+ Join(all_decode_signals, "||")+");");
+  add_stmt("any_valid_instr : assume property ( !__ISSUE__ || ("+ Join(all_decode_signals, "||")+") );");
 }
 
 void VerilogDecodeForAQedGenerator::GenSequenceOneAtATime() {
@@ -37,10 +41,56 @@ void VerilogDecodeForAQedGenerator::GenSequenceOneAtATime() {
   add_stmt("// START OF ASSUMPTIONS : GenSequenceOneAtATime //");
   for (auto i = all_decode_signals.begin(); i != all_decode_signals.end() ; ++ i) {
     for (auto j = i+1; j != all_decode_signals.end(); ++j) {
-      add_stmt("assume property (! ("+ *i +"&&"+ *j +") );");
+      add_stmt("assume property ( !__ISSUE__ || (! ("+ *i +"&&"+ *j +") ) );");
     }
   }
 }
+
+
+void VerilogDecodeForAQedGenerator::GenValidSequenceAssumption(const InstrLvlAbsCnstPtr& ila_ptr_) {
+  ILA_NOT_NULL(ila_ptr_);
+  // create registers for each decode
+  // we don't grow the bound but just use more states
+  // in the future
+  for (auto && decode_sig : all_decode_signals) {
+    auto reg_name = decode_sig + "_D_"; // + std::to_string(bidx+1);
+    add_reg(reg_name, 1);
+    // add_output(reg_name, 1);
+    add_init_stmt(reg_name + " <= 1'b0; ");
+    add_ite_stmt("__ISSUE__" , reg_name + " <= " + decode_sig + " ;", "" );
+  } // for each decode signal
+
+  // now add assumptions
+  // for all nodes find its source and the edges
+  // assume if we see it now, it must have been like its src
+  // and satisfiy its trans condition (currently only true)
+  // otherwise, you will need to take record of the conditions.
+  // which will record ila's state and map it to verilog's
+  // currently we don't handle that
+
+  for (size_t instIdx = 0; instIdx < ila_ptr_->instr_num(); instIdx++)  {
+      auto instr_ptr_ = ila_ptr_->instr(instIdx);
+      auto node_ptr = ila_ptr_->trans(instr_ptr_);
+      if (node_ptr == nullptr)
+        continue;
+      auto prev_num = node_ptr->prev_num();
+      auto decode_name = DECODE_NAME(ila_ptr_, instr_ptr_);
+      std::vector<std::string> prev_decode_vec;
+      for (size_t prev_i = 0; prev_i < prev_num ; ++ prev_i) {
+        auto prev_node = node_ptr->prev(prev_i);
+        auto prev_instr_ = prev_node->instr();
+        if (prev_instr_ == nullptr) {
+          prev_decode_vec.push_back("1'b1");
+          continue;
+        }
+        auto prev_decode_name = DECODE_NAME(ila_ptr_, prev_instr_) + "_D_";
+        prev_decode_vec.push_back(prev_decode_name);
+      }
+      // decode_name |-> ( prev_decode_1 ||  prev_decode_2 || ... )
+      auto seq = "(~ " + decode_name + "|| (" + Join(prev_decode_vec, "||") + ") )";
+      add_stmt("assume property ( !__ISSUE__ || " + seq + " );");
+  }
+} // GenValidSequenceAssumption
 
 void VerilogDecodeForAQedGenerator::ExportDecode(
     const InstrLvlAbsCnstPtr& ila_ptr_, std::set<ExprPtr> & used_vars_in_decodes) 
@@ -52,6 +102,9 @@ void VerilogDecodeForAQedGenerator::ExportDecode(
 
   if (moduleName == "")
     moduleName = sanitizeName(ila_ptr_->name().str());
+
+  add_input("__ISSUE__", 1);
+  add_wire ("__ISSUE__", 1);
 
   { // add used vars in the set as module inputs
     // VarUseFinder<ExprPtr>::VarUseList used_vars_in_decodes;
@@ -101,9 +154,7 @@ void VerilogDecodeForAQedGenerator::ExportDecode(
     ParseNonMemUpdateExpr(decode_ptr);
     vlg_name_t decode_sig_name = getVlgFromExpr(decode_ptr);
 
-    auto decodeName = "__ILA_" + sanitizeName(ila_ptr_->name().str()) +
-                      "_decode_of_" + sanitizeName(instr_ptr_->name().str()) +
-                      "__";
+    auto decodeName = DECODE_NAME(ila_ptr_, instr_ptr_);
     decodeNames.push_back(decodeName);
     add_wire(decodeName, 1);
     add_output(decodeName, 1);

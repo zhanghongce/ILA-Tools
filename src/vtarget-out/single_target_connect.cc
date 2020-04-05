@@ -294,6 +294,20 @@ void VlgSglTgtGen::ConstructWrapper_add_vlg_input_output() {
             const std::string& ila_mem_name) -> std::pair<unsigned, unsigned> {
           return vtgutil::GetMemInfo(ila_mem_name, _host);
         }); // end of function call: RegisterInterface
+    // deal with **RESET**??? & **NRESET** ???
+    auto reset_sig = _idr.isSpecialInputDirResetName(refstr);
+    if (!reset_sig.empty() && !_idr.GetResetVerilog()) {
+      if (_host->input(reset_sig) == nullptr) {
+        ILA_ERROR << "reset directive : " << refstr
+          << " refers to a non existing input: " << reset_sig;
+      } else {
+        bool pos_active = refstr.find("**RESET**") == 0;
+        add_an_assumption(
+          "dummy_reset == " + std::string(pos_active ? "" : "~") +
+          "__ILA_I_" + reset_sig,
+          "additional_mapping_control_assume");
+      }
+    } // deal with **RESET**??? & **NRESET** ???
   }
 } // ConstructWrapper_add_vlg_input_output
 
