@@ -90,7 +90,7 @@ void AQedInfoGeneratorImpl::ExportInstructionAndDecode(const std::string& filena
   ILA_ASSERT(_all_referred_vlg_names.empty());
 
   VerilogDecodeForAQedGenerator::VlgGenConfig vlg_cfg;
-  VerilogDecodeForAQedGenerator vlg_gen(vlg_cfg, "decoder");
+  VerilogDecodeForAQedGenerator vlg_gen(vlg_cfg, "decoder", "__DECODER_CLOCK__", "__DECODER_RESET__");
 
   // okay, add vlg_ports
   auto top_level_mod_info = vlg_info_ptr->get_top_module_io(supplementary_info.width_info);

@@ -3,8 +3,11 @@
 
 #include <ilang/util/log.h>
 #include <ilang/util/str_util.h>
+#include <ilang/util/container_shortcut.h>
 #include <ilang/mcm/ast_helper.h>
 #include <ilang/aqed-out/aqed_vlog_out.h>
+
+#include <algorithm>
 
 namespace ilang{
 
@@ -49,11 +52,26 @@ void VerilogDecodeForAQedGenerator::GenSequenceOneAtATime() {
 
 void VerilogDecodeForAQedGenerator::GenValidSequenceAssumption(const InstrLvlAbsCnstPtr& ila_ptr_) {
   ILA_NOT_NULL(ila_ptr_);
+  // check if there is such need for sequence
+  bool no_sequence = true;
+  for (size_t instIdx = 0; instIdx < ila_ptr_->instr_num(); instIdx++)  {
+      auto instr_ptr_ = ila_ptr_->instr(instIdx);
+      auto node_ptr = ila_ptr_->trans(instr_ptr_);
+      if (node_ptr != nullptr) {
+        no_sequence = false;
+        break;
+      }
+  }
+  if (no_sequence)
+    return; // no need for the following sequence generation
+
   // create registers for each decode
   // we don't grow the bound but just use more states
   // in the future
+  std::vector<std::string> delayed_decode_neg;
   for (auto && decode_sig : all_decode_signals) {
     auto reg_name = decode_sig + "_D_"; // + std::to_string(bidx+1);
+    delayed_decode_neg.push_back("!" + reg_name);
     add_reg(reg_name, 1);
     // add_output(reg_name, 1);
     add_init_stmt(reg_name + " <= 1'b0; ");
@@ -67,7 +85,10 @@ void VerilogDecodeForAQedGenerator::GenValidSequenceAssumption(const InstrLvlAbs
   // otherwise, you will need to take record of the conditions.
   // which will record ila's state and map it to verilog's
   // currently we don't handle that
+  
+  add_stmt("// START OF ASSUMPTIONS : Valid Sequences //");
 
+  auto null_condition = "(" + Join(delayed_decode_neg, "&&") + ")";
   for (size_t instIdx = 0; instIdx < ila_ptr_->instr_num(); instIdx++)  {
       auto instr_ptr_ = ila_ptr_->instr(instIdx);
       auto node_ptr = ila_ptr_->trans(instr_ptr_);
@@ -80,7 +101,7 @@ void VerilogDecodeForAQedGenerator::GenValidSequenceAssumption(const InstrLvlAbs
         auto prev_node = node_ptr->prev(prev_i);
         auto prev_instr_ = prev_node->instr();
         if (prev_instr_ == nullptr) {
-          prev_decode_vec.push_back("1'b1");
+          prev_decode_vec.push_back(null_condition);
           continue;
         }
         auto prev_decode_name = DECODE_NAME(ila_ptr_, prev_instr_) + "_D_";
