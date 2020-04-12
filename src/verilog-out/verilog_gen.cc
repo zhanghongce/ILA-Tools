@@ -1391,6 +1391,7 @@ void VerilogGenerator::ExportTopLevelInstr(const InstrCnstPtr& instr_ptr_) {
           state_update_unknown(sig_name)));
       add_output(sig_name, 1);
       add_wire(sig_name, 1);
+      add_reg(reg_name, 1);
       add_assign_stmt(sig_name, reg_name);
       add_ite_stmt(decodeName, reg_name + " <= " + original_cond_sig, "");
     }
