@@ -44,15 +44,8 @@ opt
 %flatten%
 %setundef -undriven -init -expose%
 sim -clock clk -reset rst -rstlen %rstlen% -n %cycle% -w %module%
-memory_dff -wr_only
-memory_collect;
-memory_unpack
-splitnets -driver
-opt;;
-memory_collect;
-pmuxtree
-proc
-opt;;
+memory -nomap
+opt
 )***";
 
 static std::string chc_tmpl_datatypes = R"***(

@@ -120,6 +120,7 @@ void VerilogAnalyzer::invoke_parser() {
       _bad_state = true;
       return;
     }
+    ILA_DLOG("VerilogAnalyzer.Parse") << "Parsing file : " << src;
     verilog_preprocessor_set_file(yy_preproc, (char*)AllocCstr(src));
     // yy_flex_debug = (1);
     int result = verilog_parse_file(fhandler);

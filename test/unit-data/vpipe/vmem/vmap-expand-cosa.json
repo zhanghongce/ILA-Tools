@@ -1,0 +1,24 @@
+{
+  "models": { "ILA":"m0" , "VERILOG": "m1" },
+  "instruction mapping": [],
+  "state mapping": {  
+    "mema":"mema",
+    "memb":"memb"},
+
+  "interface mapping": {
+     "rst":"**RESET**", 
+     "clk":"**CLOCK**",
+     "addra":"addra",
+     "addrb":"addrb",
+     "start":"start"
+  },
+  "annotation": {
+    "memory": {
+      "mema":"internal",
+      "memb":"internal"
+    }
+  },
+
+  "mapping control" : []
+}
+

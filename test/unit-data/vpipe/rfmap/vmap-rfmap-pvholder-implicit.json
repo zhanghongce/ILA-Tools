@@ -1,0 +1,16 @@
+{
+  "models": { "ILA":"m0" , "VERILOG": "m1" },
+  "state mapping": {  
+  	"r0":[ ["__START__", "m1.registers[0]@2"] , ["__IEND__", "m1.registers[0]"] ] ,
+    "r1":[ ["__START__", "m1.registers[1]@2"] , ["__IEND__", "m1.registers[1]"] ] ,
+    "r2":[ ["__START__", "m1.registers[2]@2"] , ["__IEND__", "m1.registers[2]"] ] ,
+    "r3":[ ["__START__", "m1.registers[3]@2"] , ["__IEND__", "m1.registers[3]"] ] },
+
+  "interface mapping": {
+  	 "rst":"**RESET**", 
+  	 "clk":"**CLOCK**",
+  	 "inst":"inst",
+  	 "dummy_read_rf":"**KEEP**",
+  	 "dummy_rf_data":"**KEEP**"
+  }// end of monitor
+}

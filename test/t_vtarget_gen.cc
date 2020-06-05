@@ -267,6 +267,27 @@ TEST(TestVlgTargetGen, PipeExampleRfmapPost) {
   vg.GenerateTargets();
 }
 
+TEST(TestVlgTargetGen, PipeExampleRfmapImplicitValueHolder) {
+  auto ila_model = SimplePipe::BuildModel();
+
+  auto dirName = os_portable_append_dir(ILANG_TEST_DATA_DIR, "vpipe");
+  auto rfDir = os_portable_append_dir(dirName, "rfmap");
+
+  VerilogVerificationTargetGenerator vg(
+      {},                                                 // no include
+      {os_portable_append_dir(dirName, "simple_pipe.v")}, // vlog files
+      "pipeline_v",                                       // top_module_name
+      os_portable_append_dir(rfDir, "vmap-rfmap-pvholder-implicit.json"),         // variable mapping
+      os_portable_append_dir(rfDir, "cond-rfmap-pvholder-implicit.json"),         // instruction-mapping
+      os_portable_append_dir(dirName, "verify_pvholder_implicit"),          // verification dir
+      ila_model.get(),                                    // ILA model
+      VerilogVerificationTargetGenerator::backend_selector::COSA // engine
+  );
+
+  EXPECT_FALSE(vg.in_bad_state());
+
+  vg.GenerateTargets();
+}
 // test all kinds of rfmap issue
 // test bad states
 
@@ -346,6 +367,35 @@ TEST(TestVlgTargetGen, MemoryInternal) { // test the expansion of memory
       os_portable_append_dir ( dirName, "vmap-expand.json"), // variable mapping
       os_portable_append_dir ( dirName, "cond-expand.json"),
       dirName,                      // output path
+      ila_model.get(),
+      VerilogVerificationTargetGenerator::backend_selector::COSA,
+      vtg_cfg,
+      vlg_cfg);
+
+  EXPECT_FALSE(vg.in_bad_state());
+
+  vg.GenerateTargets();
+}
+
+
+TEST(TestVlgTargetGen, MemoryInternalCoSA) { // test the expansion of memory
+  auto ila_model = MemorySwap::BuildSimpleSwapModel();
+
+  VerilogVerificationTargetGenerator::vtg_config_t
+      vtg_cfg; // default configuration
+  VerilogGeneratorBase::VlgGenConfig vlg_cfg;
+  vlg_cfg.extMem = false;
+  auto dirName = 
+    os_portable_join_dir({ILANG_TEST_SRC_ROOT, "unit-data","vpipe", "vmem"});
+  auto outputDir = 
+    os_portable_join_dir({ILANG_TEST_SRC_ROOT, "unit-data","vpipe", "vmem", "vmem-eq"});
+  VerilogVerificationTargetGenerator vg(
+      {},                           // no include
+      {os_portable_append_dir(dirName , "swap_im.v")},  // vlog files
+      "swap",                // top_module_name
+      os_portable_append_dir ( dirName, "vmap-expand-cosa.json"), // variable mapping
+      os_portable_append_dir ( dirName, "cond-expand.json"),
+      outputDir,                      // output path
       ila_model.get(),
       VerilogVerificationTargetGenerator::backend_selector::COSA,
       vtg_cfg,
@@ -707,6 +757,5 @@ TEST(TestVlgTargetGen, ResetAnnotationABC) {
   vg.GenerateTargets();
 }
 
-TEST(TestVlgTargetGen, AesExample) {}
 
 }; // namespace ilang
