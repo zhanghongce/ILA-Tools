@@ -756,6 +756,9 @@ smt::Term ResetAndGetSmtTerm(smt::SmtSolver& solver, const ExprRef& expr,
 
 #endif // SMTSWITCH_INTERFACE
 
+ExprRef LoadSmtExprFromString(const std::string & s, const Ila & ila);
+ExprRef LoadSmtExprFromFile(const std::string & fname, const Ila & ila);
+
 } // namespace ilang
 
 #endif // ILANG_ILANG_CPP_H__

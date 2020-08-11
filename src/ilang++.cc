@@ -14,6 +14,7 @@
 #include <ilang/target-smt/smt_switch_itf.h>
 #include <ilang/util/log.h>
 #include <ilang/verilog-out/verilog_gen.h>
+#include <ilang/smt-inout/smt-to-ila/smtlib2parser.h>
 
 #ifdef SMTSWITCH_INTERFACE
 #include <smt-switch/smt.h>
@@ -869,5 +870,16 @@ smt::Term ResetAndGetSmtTerm(smt::SmtSolver& solver, const ExprRef& expr,
 }
 
 #endif // SMTSWITCH_INTERFACE
+
+
+ExprRef LoadSmtExprFromString(const std::string & s, const Ila & ila) {
+  smt2ila::Smtlib2Parser parser(*ila.get().get());
+  return parser.ParseSmtFromString(s);
+}
+
+ExprRef LoadSmtExprFromFile(const std::string & fname, const Ila & ila) {
+  smt2ila::Smtlib2Parser parser(*ila.get().get());
+  return parser.ParseSmtFromFile(fname);
+}
 
 } // namespace ilang
