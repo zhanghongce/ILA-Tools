@@ -79,6 +79,9 @@ public:
 
   std::string GetParserErrorMessage() const { return error_msg_; }
 
+  static BvValType SmtConstToBvVal(const std::string &v,  unsigned base);
+
+  static bool SmtConstToBoolVal(const std::string &v);
   // ------------------------------------------------------------------------
   
   // we probably don't need to make sort

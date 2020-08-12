@@ -20,6 +20,7 @@
 
 #include <ilang/ila/ast_hub.h>
 #include <ilang/util/container_shortcut.h>
+#include <ilang/util/str_util.h>
 #include <ilang/util/log.h>
 
 #include <fstream>
@@ -292,16 +293,31 @@ Smtlib2Parser::TermPtrT Smtlib2Parser::make_function(const std::string& name, So
     
 }
 
+BvValType Smtlib2Parser::SmtConstToBvVal(const std::string &v,  unsigned base) {
+  return StrToULongLong(v, base);
+}
+
+bool Smtlib2Parser::SmtConstToBoolVal(const std::string &v) {
+  if (v == "true" || v == "1")
+    return true;
+  if (v == "false" || v == "0")
+    return false;
+  ILA_CHECK(false) << "unable to convert " <<  v << " to bool";
+  return true;
+}
+
 Smtlib2Parser::TermPtrT Smtlib2Parser::make_number(const std::string& rep, int width, int base) {
   // it is definitely a bitvector
   SortPtrT sort = make_bv_sort(width);
   ILA_CHECK (sort != sort_names.size());
   auto sort_ptr = get_sort(sort);
   ExprPtr ret;
-  if (sort_ptr->is_bv())
-    ret = asthub::BvConst(0, sort_ptr->bit_width()); // BUG
-  else if (sort_ptr->is_bool()) 
-    ret = asthub::BoolConst(0); // todo convert // BUG
+  if (sort_ptr->is_bv()) {
+    ret = asthub::BvConst(SmtConstToBvVal(rep, base), sort_ptr->bit_width()); // BUG
+  }
+  else if (sort_ptr->is_bool())  {
+    ret = asthub::BoolConst( SmtConstToBoolVal(rep) ); // todo convert // BUG
+  }
   else
     ILA_CHECK(false) << "Unable to create number " << rep;
 
@@ -538,7 +554,7 @@ DEFINE_OPERATOR(concat) {
 
 DEFINE_OPERATOR(bvnot) {
   CHECK_BV_ONE_ARG(idx, args);
-  MAKE_RESULT(asthub::Not( get_term(args[0]))); // BUG
+  MAKE_RESULT(asthub::Complement( get_term(args[0])));
 }
 DEFINE_OPERATOR(bvneg) {
   CHECK_BV_ONE_ARG(idx, args);
@@ -573,7 +589,7 @@ DEFINE_OPERATOR(bvnand) {
   for (size_t idx = 1; idx < argterm.size(); ++idx)
     prev = asthub::And(prev, argterm[idx]);
 
-  MAKE_RESULT(asthub::Not(prev)); // BUG
+  MAKE_RESULT(asthub::Complement(prev));
 }
 
 DEFINE_OPERATOR(bvor) {
@@ -604,7 +620,7 @@ DEFINE_OPERATOR(bvnor) {
   for (size_t idx = 1; idx < argterm.size(); ++idx)
     prev = asthub::Or(prev, argterm[idx]);
 
-  MAKE_RESULT(asthub::Not(prev)); // BUG
+  MAKE_RESULT(asthub::Complement(prev));
 }
 
 DEFINE_OPERATOR(bvxor) {
@@ -614,7 +630,7 @@ DEFINE_OPERATOR(bvxor) {
 
 DEFINE_OPERATOR(bvxnor) {
   CHECK_BV_TWO_ARG(idx, args);
-  MAKE_RESULT(asthub::Not(asthub::Xor(get_term (args[0]) , get_term (args[1]) ))); // BUG
+  MAKE_RESULT(asthub::Complement(asthub::Xor(get_term (args[0]) , get_term (args[1]) )));
 }
 
 DEFINE_OPERATOR(bvult) {
@@ -749,7 +765,7 @@ DEFINE_OPERATOR(extract) {
   ILA_CHECK(ISBV(args[0]));  
   ILA_CHECK(idx[0] >= 0 && idx[1] >= 0);
 
-  auto width = SORT(args[0])->bit_width();
+  uint64_t width = SORT(args[0])->bit_width();
   uint64_t left = idx[0], right = idx[1];
   ILA_CHECK (left < width);
   ILA_CHECK (right < width);
@@ -762,7 +778,7 @@ DEFINE_OPERATOR(bit2bool)  {
   ILA_CHECK(args.size() == 1);
   ILA_CHECK(ISBV(args[0]));  
   ILA_CHECK(idx[0] >= 0);
-  auto width = SORT(args[0])->bit_width();
+  uint64_t width = SORT(args[0])->bit_width();
   uint64_t sel = idx[0];
   ILA_CHECK (sel < width);
   MAKE_RESULT(asthub::Eq( asthub::Extract(get_term(args[0]), sel, sel), asthub::BvConst(1,1)));
